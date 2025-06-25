@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  - SPDX-FileCopyrightText: 2014 Robin Appelman <icewind@owncloud.com>
+  - SPDX-License-Identifier: MIT
+-->
+<phpunit bootstrap="bootstrap.php">
+	<testsuite name='Stream'>
+		<directory suffix='.php'>./</directory>
+	</testsuite>
+
+	<coverage>
+		<include>
+			<directory suffix=".php">../src</directory>
+		</include>
+	</coverage>
+</phpunit>

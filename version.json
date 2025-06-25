@@ -1,0 +1,14 @@
+{
+  "android": {
+    "version": "1.0",
+    "versionCode": 35,
+    "url": "https://api.koleso.app/koleso-1.0.35.apk",
+    "releaseNotes": "- Исправлены ошибки\n- Улучшена производительность",
+    "forceUpdate": false
+  },
+  "ios": {
+    "version": "1.0",
+    "versionCode": 32,
+    "url": "https://apps.apple.com/app/id123456789"
+  }
+}

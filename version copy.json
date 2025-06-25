@@ -1,0 +1,8 @@
+{
+  "android": {
+    "version": "1.0",
+    "versionCode": 29,
+    "mandatory": false,
+    "apkUrl": "https://api.koleso.app/app-release.apk"
+  }
+}

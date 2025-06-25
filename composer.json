@@ -1,0 +1,7 @@
+{
+    "require": {
+        "vhar/sberbank": "^1.0",
+        "icewind/smb": "^3.7",
+        "wapmorgan/morphos": "^3.2"
+    }
+}

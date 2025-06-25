@@ -1,0 +1,25 @@
+{
+    "name": "vhar/sberbank",
+    "description": "Simple PHP client for Sperbank acquiring REST API",
+    "version": "1.0.1",
+    "type": "library",
+    "keywords": ["sberbank", "sberbank online", "credit card", "sberbank acquiring"],
+    "require": {
+        "php": ">=7.1",
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "^6.1.0|^7.3"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Vladimir Kharinenkov",
+            "email": "vhar@mail.ru"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "VHar\\Sberbank\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
