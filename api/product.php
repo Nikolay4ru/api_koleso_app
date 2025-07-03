@@ -7,16 +7,13 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+require_once 'config.php';
 
-// Конфигурация базы данных
-$dbHost = 'localhost';
-$dbName = 'app';
-$dbUser = 'root';
-$dbPass = 'SecretQi159875321+A';
+
 
 // Подключение к базе данных с обработкой ошибок
 try {
-    $db = new PDO("mysql:host=$dbHost;dbname=$dbName;charset=utf8mb4", $dbUser, $dbPass);
+    $db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
@@ -53,6 +50,9 @@ try {
             break;
         case 'same-model':
             handleSameModelProductsRequest($db);
+            break;
+        case 'compatible_cars':
+            handleCompatibleCarsRequest($db);
             break;
         default:
             http_response_code(400);
@@ -314,6 +314,139 @@ function formatSimpleProduct($product) {
     }
     
     return $formatted;
+}
+
+
+
+function handleCompatibleCarsRequest($db) {
+    if (!isset($_GET['product_id']) || !is_numeric($_GET['product_id'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Valid product ID is required']);
+        return;
+    }
+
+    $productId = (int)$_GET['product_id'];
+
+    // Получаем товар
+    $stmt = $db->prepare("SELECT * FROM products WHERE id = ?");
+    $stmt->execute([$productId]);
+    $product = $stmt->fetch();
+
+    if (!$product || empty($product['category'])) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Product not found or category missing']);
+        return;
+    }
+
+    $cars = [];
+
+    switch ($product['category']) {
+        case 'Автошины':
+            // width, profile, diameter
+            if (empty($product['width']) || empty($product['profile']) || empty($product['diameter'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Not enough parameters for tyre compatibility']);
+                return;
+            }
+            $stmt = $db->prepare("
+                SELECT
+                    MIN(c.carid) as carid,
+                    c.marka,
+                    c.model,
+                    c.kuzov,
+                    c.beginyear,
+                    c.endyear
+                FROM wheels w
+                INNER JOIN cars c ON w.carid = c.carid
+                WHERE w.tyre_width = ? AND w.tyre_height = ? AND w.tyre_diameter = ?
+                GROUP BY c.marka, c.model, c.kuzov, c.beginyear, c.endyear
+                ORDER BY c.marka, c.model, c.beginyear
+            ");
+            $stmt->execute([$product['width'], $product['profile'], $product['diameter']]);
+            $cars = $stmt->fetchAll();
+            break;
+
+        case 'Диски':
+            // diameter, width, pcd, et, dia
+            if (empty($product['diameter']) || empty($product['width']) || empty($product['hole']) || empty($product['pcd_value']) || !isset($product['et']) || empty($product['dia'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Not enough parameters for wheel compatibility']);
+                return;
+            }
+            $stmt = $db->prepare("
+                SELECT
+                    MIN(c.carid) as carid,
+                    c.marka,
+                    c.model,
+                    c.kuzov,
+                    c.beginyear,
+                    c.endyear
+                FROM wheels w
+                INNER JOIN cars c ON w.carid = c.carid
+                WHERE w.diameter = ? AND w.width = ? AND c.pcd = ? AND c.hole = ? AND w.et = ? AND c.dia = ?
+                GROUP BY c.marka, c.model, c.kuzov, c.beginyear, c.endyear
+                ORDER BY c.marka, c.model, c.beginyear
+            ");
+            $stmt->execute([
+                $product['diameter'],
+                $product['width'],
+                $product['pcd_value'],
+                $product['hole'],
+                $product['et'],
+                $product['dia']
+            ]);
+            $cars = $stmt->fetchAll();
+            break;
+
+        case 'Аккумуляторы':
+            // capacity, polarity, starting_current -> volume_min/max, polarity, min_current
+            if (empty($product['capacity']) || empty($product['polarity']) || empty($product['starting_current'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Not enough parameters for battery compatibility']);
+                return;
+            }
+            $capacity = (int)$product['capacity'];
+            $polarity = $product['polarity'];
+            $current = (int)$product['starting_current'];
+            $stmt = $db->prepare("
+                SELECT
+                    MIN(c.carid) as carid,
+                    c.marka,
+                    c.model,
+                    c.kuzov,
+                    c.beginyear,
+                    c.endyear
+                FROM batteries b
+                INNER JOIN cars c ON b.carid = c.carid
+                WHERE b.volume_min <= ? AND b.volume_max >= ? AND b.polarity = ? AND b.min_current <= ?
+                GROUP BY c.marka, c.model, c.kuzov, c.beginyear, c.endyear
+                ORDER BY c.marka, c.model, c.beginyear
+            ");
+            $stmt->execute([$capacity, $capacity, $polarity, $current]);
+            $cars = $stmt->fetchAll();
+            break;
+
+        default:
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Unsupported product category for compatibility search']);
+            return;
+    }
+
+    $result = [];
+    
+    foreach ($cars as $car) {
+        $result[] = [
+            'carid' => $car['carid'],
+            'marka' => $car['marka'],
+            'model' => $car['model'],
+            'kuzov' => $car['kuzov'],
+            'beginyear' => $car['beginyear'],
+            'endyear' => $car['endyear'],
+            'display' => "{$car['marka']} {$car['model']} {$car['kuzov']} ({$car['beginyear']} - {$car['endyear']})"
+        ];
+    }
+
+    echo json_encode(['success' => true, 'cars' => $result]);
 }
 
 function formatProductSpecs($product) {

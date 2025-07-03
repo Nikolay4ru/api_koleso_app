@@ -75,7 +75,7 @@ function getNotifications($userId) {
         // Получаем фильтр по типу
         $type = $_GET['type'] ?? null;
         
-        // Основной запрос
+        // Основной запрос с сортировкой: непрочитанные сначала, затем по дате
         $query = "SELECT 
                     n.id,
                     n.type,
@@ -96,7 +96,8 @@ function getNotifications($userId) {
             $params['type'] = $type;
         }
         
-        $query .= " ORDER BY n.created_at DESC
+        // Сортировка: сначала непрочитанные (is_read = 0), потом по дате создания
+        $query .= " ORDER BY n.is_read ASC, n.created_at DESC
                     LIMIT :limit OFFSET :offset";
         
         $stmt = $pdo->prepare($query);
@@ -126,14 +127,17 @@ function getNotifications($userId) {
                     $notification['icon'] = 'archive';
                     $notification['color'] = '#FFA726';
                     break;
-  
                 case 'promo':
                     $notification['icon'] = 'local-offer';
                     $notification['color'] = '#FF6B6B';
                     break;
+                case 'admin':
+                    $notification['icon'] = 'admin-panel-settings';
+                    $notification['color'] = '#9C27B0';
+                    break;
                 default:
-                   $notification['icon'] = '';
-                   $notification['color'] = '#FF6B6B';
+                   $notification['icon'] = 'notifications';
+                   $notification['color'] = '#757575';
             }
             $notification['created_at'] = date('c', strtotime($notification['created_at']));
             if ($notification['read_at']) {

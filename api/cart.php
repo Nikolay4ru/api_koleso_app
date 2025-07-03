@@ -87,7 +87,8 @@ try {
                     p.name,
                     p.price,
                     p.image_url,
-                    p.brand
+                    p.brand,
+                    p.yandexsplit
                 FROM cart_items ci
                 JOIN products p ON ci.product_id = p.id
                 WHERE ci.user_id = :user_id

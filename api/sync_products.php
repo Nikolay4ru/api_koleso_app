@@ -65,7 +65,8 @@ try {
             'polarity' => $productData['Полярность'] ?? null,
             'starting_current' => $productData['ПусковойТок'] ?? null,
             'spiked' => isset($productData['spiked']) ? (int)$productData['spiked'] : null,
-            'cashback' => $productData['СуммаКешбэка'] ?? null // Добавляем поле кешбэка
+            'cashback' => $productData['СуммаКешбэка'] ?? null, // Добавляем поле кешбэка
+            'yandexsplit' => $productData['ЯндексСплит'] ?? 0, // Добавляем поле Яндекс Сплит
         ];
         
         // Вставка или обновление товара
@@ -104,7 +105,7 @@ function upsertProduct($pdo, $product) {
         'sku', 'name', 'category', 'brand', 'model', 'price', 'old_price', 'width', 'diameter', 
         'profile', 'season', 'runflat', 'runflat_tech', 'load_index', 'speed_index', 'pcd', 
         'et', 'dia', 'rim_type', 'rim_color', 'capacity', 'polarity', 
-        'starting_current', 'image_url', 'out_of_stock', 'spiked', 'last_sync_at', 'hole', 'pcd_value', '1c_id', 'cashback'
+        'starting_current', 'image_url', 'out_of_stock', 'spiked', 'last_sync_at', 'hole', 'pcd_value', '1c_id', 'cashback', 'yandexsplit'
     ];
     
     foreach ($requiredParams as $param) {
@@ -117,12 +118,12 @@ function upsertProduct($pdo, $product) {
         sku, name, category, brand, model, price, old_price, width, diameter, profile, season, 
         runflat, runflat_tech, load_index, speed_index, pcd, et, dia, rim_type, rim_color, 
         capacity, polarity, starting_current, image_url, out_of_stock, spiked, last_sync_at, 
-        hole, pcd_value, 1c_id, cashback
+        hole, pcd_value, 1c_id, cashback, yandexsplit
     ) VALUES (
         :sku, :name, :category, :brand, :model, :price, :old_price, :width, :diameter, :profile, :season, 
         :runflat, :runflat_tech, :load_index, :speed_index, :pcd, :et, :dia, :rim_type, :rim_color, 
         :capacity, :polarity, :starting_current, :image_url, :out_of_stock, :spiked, :last_sync_at, 
-        :hole, :pcd_value, :1c_id, :cashback
+        :hole, :pcd_value, :1c_id, :cashback, :yandexsplit
     ) ON DUPLICATE KEY UPDATE
         name = VALUES(name),
         category = VALUES(category),
@@ -153,7 +154,8 @@ function upsertProduct($pdo, $product) {
         pcd_value = VALUES(pcd_value),
         1c_id = VALUES(1c_id),
         hole = VALUES(hole),
-        cashback = VALUES(cashback)";
+        cashback = VALUES(cashback),
+        yandexsplit = VALUES(yandexsplit)";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($product);

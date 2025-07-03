@@ -1,7 +1,5 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+
 header('Content-Type: application/json');
 require_once 'config.php';
 require_once 'jwt_functions.php';
@@ -86,7 +84,10 @@ $input = json_decode(file_get_contents('php://input'), true);
 // Получаем store_id администратора (может быть null)
 $storeId = $admin['store_id'] ?? null;
 $page = max(1, (int)($input['page'] ?? 1));
-$perPage = min(50, max(10, (int)($input['per_page'] ?? 20))); 
+$perPage = min(50, max(10, (int)($input['per_page'] ?? 50))); 
+
+// Получаем статус из входных данных
+$status = isset($input['status']) ? trim($input['status']) : null;
 
 try {
     $login_1с = 'Администратор';
@@ -102,6 +103,11 @@ try {
         'timestamp' => time()
     ];
 
+    // Добавляем статус в параметры, если задан и не "all"
+    if ($status && $status !== 'all') {
+        $requestData['status'] = $status;
+    }
+
     // Настройки запроса
     $options = [
         'http' => [
@@ -109,7 +115,7 @@ try {
             'header'  => "Content-type: application/json\r\n" .
                           "Authorization: Basic " . base64_encode("$login_1с:$password_1с") . "\r\n",
             'content' => json_encode($requestData),
-            'timeout' => 20 // Таймаут 10 секунд
+            'timeout' => 20 // Таймаут 20 секунд
         ]
     ];
 
@@ -131,9 +137,17 @@ try {
         throw new Exception('Некорректный формат данных от 1С');
     }
 
+    // Фильтруем заказы по статусу, если не удалось на стороне 1С
+    $orders = $data['orders'];
+    if ($status && $status !== 'all') {
+        $orders = array_values(array_filter($orders, function($order) use ($status) {
+            return isset($order['status']) && $order['status'] === $status;
+        }));
+    }
+
     // Собираем все store_id для запроса названий магазинов
     $storeIds = [];
-    foreach ($data['orders'] as $order) {
+    foreach ($orders as $order) {
         $orderStoreId = $order['storeId'] ?? $storeId;
         if ($orderStoreId !== null && !in_array($orderStoreId, $storeIds)) {
             $storeIds[] = $orderStoreId;
@@ -151,7 +165,7 @@ try {
 
     // Группируем товары по storeId для оптимизации запросов к БД
     $productsByStore = [];
-    foreach ($data['orders'] as $order) {
+    foreach ($orders as $order) {
         $orderStoreId = $order['storeId'] ?? $storeId;
         if ($orderStoreId === null) continue;
         
@@ -240,14 +254,14 @@ try {
             'items_count' => count($items),
             'items' => $items
         ];
-    }, $data['orders']);
+    }, $orders);
 
     echo json_encode([
         'success' => true,
         'orders' => $formattedOrders,
         'page' => $page,
         'per_page' => $perPage,
-        'has_more' => count($data['orders']) === $perPage
+        'has_more' => count($orders) === $perPage
     ]);
 
 } catch (Exception $e) {
