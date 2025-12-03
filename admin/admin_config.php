@@ -5,9 +5,9 @@ ini_set('display_errors', 1);
 
 // Настройки базы данных
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'app');
-define('DB_USER', 'root');
-define('DB_PASS', 'SecretQi159875321+A');
+define('DB_NAME', '');
+define('DB_USER', '');
+define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 
@@ -29,11 +29,11 @@ try {
 }
 
 // Базовый URL админ-панели
-define('BASE_URL', 'https://api.koleso.app/admin/');
+define('BASE_URL', 'https://localhost/admin/');
 
 // Настройки безопасности31.129.111.90 
-define('ADMIN_IP_WHITELIST', ['127.0.0.1', '192.168.1.1', '188.243.226.195', '192.168.1.10', '31.129.111.90']); // Ограничение доступа по IP (необязательно)
-define('CSRF_TOKEN_NAME', 'admin_csrf_token');
+define('ADMIN_IP_WHITELIST', []); // Ограничение доступа по IP (необязательно)
+define('CSRF_TOKEN_NAME', '');
 
 // Генерация CSRF-токена
 if (empty($_SESSION[CSRF_TOKEN_NAME])) {
